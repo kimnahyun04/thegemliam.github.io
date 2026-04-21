@@ -1,0 +1,1329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <title>Spline + Particles</title>
+
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    .viewport {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+    }
+
+    spline-viewer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+
+      opacity: 0;
+      transform: scale(1.04);
+      transition: opacity 1.6s ease-out, transform 1.6s ease-out;
+    }
+
+    spline-viewer.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .particles {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+
+  opacity: 0;
+  transition: opacity 1.6s ease-out;
+}
+
+.particles.show {
+  opacity: 1;
+}
+
+    .particle {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+
+  /* 🔥 크기 JS에서 제어 */
+  width: var(--size);
+  height: var(--size);
+
+  background: radial-gradient(circle, var(--color) 0%, transparent 70%);
+  box-shadow: 0 0 calc(var(--size) * 2) var(--color);
+
+  animation: floatUp linear infinite, flicker ease-in-out infinite;
+}
+
+
+    @keyframes floatUp {
+      0% {
+        transform: translate3d(0, 3vh, 0) scale(0.9);
+        opacity: 0;
+      }
+      15% {
+        opacity: 1;
+      }
+      50% {
+        transform: translate3d(1vw, -8vh, 0) scale(1);
+      }
+      100% {
+        transform: translate3d(-1vw, -18vh, 0) scale(0.85);
+        opacity: 0;
+      }
+    }
+
+    @keyframes flicker {
+      0%, 100% { opacity: 0.15; }
+      50% { opacity: 0.95; }
+    }
+/* 카드 패널 공통 */
+.info-panel {
+  position: absolute;
+  top: 50%;
+  z-index: 6;
+  pointer-events: auto;
+  opacity: 0;
+  transition:
+    transform 0.95s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.95s ease;
+  will-change: transform, opacity;
+  font-family: 'Cormorant Garamond', serif;
+}
+
+/* 기본 숨김 상태 */
+.left-panel {
+  left: 2.2%;
+  transform: translate(-130%, -50%) rotate(-8deg) scale(0.92);
+}
+
+.right-panel {
+  right: 2.2%;
+  transform: translate(130%, -50%) rotate(8deg) scale(0.92);
+}
+
+/* 등장 후 현재 위치에 안착 */
+.left-panel.show {
+  opacity: 1;
+  transform: translate(0, -50%) rotate(0deg) scale(1);
+}
+
+.right-panel.show {
+  opacity: 1;
+  transform: translate(0, -50%) rotate(0deg) scale(1);
+}
+
+/* 다시 집어넣기 */
+.left-panel.hide {
+  opacity: 0;
+  transform: translate(-130%, -50%) rotate(-6deg) scale(0.94);
+}
+
+.right-panel.hide {
+  opacity: 0;
+  transform: translate(130%, -50%) rotate(6deg) scale(0.94);
+}
+.panel-card {
+  overflow: hidden;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(
+    180deg,
+    rgba(146, 47, 47, 0.411) 0%,
+    rgba(102, 40, 40, 0.411) 100%
+  );
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 0 1.8vw rgba(0, 0, 0, 0.22),
+    inset 0 0 0.7vw rgba(255, 255, 255, 0.035),
+    inset 0 0 1vw rgba(110, 0, 20, 0.06);
+}
+
+.image-card,
+.text-card {
+  width: clamp(16rem, 19vw, 20rem);
+  height: clamp(28rem, 40vw, 34rem);
+}
+
+.full-image {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.full-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.full-image::after {
+  display: none;
+}
+
+.image-overlay-text {
+  position: absolute;
+  left: 1rem;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.95);
+  
+}
+
+.image-overlay-text h2 {
+  margin: 0 0 0.35rem 0;
+  font-size: clamp(1.05rem, 1.2vw, 1.35rem);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.image-overlay-text p {
+  margin: 0;
+  font-size: clamp(0.75rem, 0.8vw, 0.9rem);
+  color: rgba(255, 255, 255, 0.78);
+  letter-spacing: 0.08em;
+}
+
+.panel-content {
+  height: 100%;
+  padding: 1.15rem 1rem 1.15rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  color: rgba(255, 255, 255, 0.9);
+  
+}
+
+.panel-label {
+  margin-bottom: 0.7rem;
+  font-size: clamp(0.68rem, 0.72vw, 0.76rem);
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.panel-content h2 {
+  margin: 0 0 0.9rem 0;
+  font-size: clamp(1rem, 1.1vw, 1.22rem);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.panel-content p {
+  margin: 0 0 0.95rem 0;
+  font-size: clamp(0.8rem, 0.82vw, 0.93rem);
+  line-height: 1.8;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.panel-content::after {
+  content: "";
+  margin-top: auto;
+  width: 32%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(180, 20, 40, 0.88),
+    rgba(255, 255, 255, 0)
+  );
+  opacity: 0.8;
+}
+
+@media (max-width: 900px) {
+  .image-card,
+  .text-card {
+    width: min(46vw, 18rem);
+    height: min(78vw, 30rem);
+  }
+}
+.hint {
+  position: absolute;
+  bottom: 3%;
+  left: 50%;
+  transform: translateX(-50%);
+
+  z-index: 10;
+  pointer-events: none;
+
+  font-size: clamp(0.9rem, 1vw, 1.1rem);
+  letter-spacing: 0.12em;
+
+  color: rgba(255, 255, 255, 0.65);
+
+  text-align: center;
+
+  opacity: 0.8;
+  animation: softBlink 3s ease-in-out infinite;
+}
+
+@keyframes softBlink {
+  0%   { opacity: 0.4; transform: translateX(-50%) translateY(0); }
+  50%  { opacity: 1;   transform: translateX(-50%) translateY(-2px); }
+  100% { opacity: 0.4; transform: translateX(-50%) translateY(0); }
+}
+.accent {
+  color: #941e1e;
+  text-shadow: 0 0 8px rgba(255, 40, 70, 0.25);
+}
+.mode-toggle {
+  position: absolute;
+  top: 3%;
+  right: 3%;
+
+  width: 3.3rem;
+  height: 1.68rem;
+  border-radius: 999px;
+
+  z-index: 20;
+  cursor: pointer;
+
+  background: rgba(255,255,255,0.08);
+  border: 1px solid rgba(255,255,255,0.16);
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  transition:
+    background 0.24s ease,
+    border-color 0.24s ease,
+    opacity 0.24s ease;
+}
+
+.mode-toggle:hover {
+  background: rgba(255,255,255,0.11);
+  border-color: rgba(255,255,255,0.22);
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 50%;
+  left: 0.18rem;
+
+  width: 1.26rem;
+  height: 1.26rem;
+  border-radius: 50%;
+
+  transform: translateY(-50%);
+
+  background: rgba(255,255,255,0.92);
+
+  transition:
+    left 0.28s ease,
+    background 0.28s ease;
+}
+
+.mode-toggle.active {
+  background: rgba(255, 210, 220, 0.16);
+  border-color: rgba(255,255,255,0.24);
+}
+
+.mode-toggle.active .toggle-knob {
+  left: 1.84rem;
+  background: rgba(255,255,255,0.98);
+}
+.transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle, #000 0%, #000 100%);
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  transition: opacity 0.8s ease;
+}
+
+.transition-overlay.show {
+  opacity: 1;
+}
+
+.music-btn {
+  position: absolute;
+  bottom: 6%;
+  right: 4%;
+  width: clamp(2.5rem, 3.2vw, 3.2rem);
+  height: clamp(2.5rem, 3.2vw, 3.2rem);
+  border-radius: 50%;
+  z-index: 10;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  box-shadow:
+    0 0 0.8vw rgba(255, 180, 180, 0.25),
+    inset 0 0 0.35vw rgba(255, 255, 255, 0.1);
+
+  transition: all 0.3s ease;
+}
+
+.music-btn:hover {
+  transform: scale(1.08);
+}
+
+.music-inner {
+  width: clamp(0.7rem, 0.9vw, 0.9rem);
+  height: clamp(0.7rem, 0.9vw, 0.9rem);
+  border-radius: 50%;
+  background: #ffb7b7;
+
+  box-shadow:
+    0 0 0.6vw rgba(255, 180, 180, 0.6),
+    0 0 1.2vw rgba(255, 120, 120, 0.4);
+}
+
+.music-label {
+  position: absolute;
+  left: 50%;
+  bottom: -1.55rem;
+  transform: translateX(-50%);
+
+  display: block;
+  width: max-content;
+  min-width: 6.2rem;
+
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+
+  text-align: center;
+  white-space: nowrap;
+
+  color: rgba(255, 255, 255, 0.62);
+
+  transition: color 0.35s ease, text-shadow 0.35s ease;
+}
+
+.music-btn.playing .music-label {
+  color: rgba(255, 180, 180, 0.9);
+  text-shadow: 0 0 0.4vw rgba(255, 150, 150, 0.4);
+}
+.top-nav {
+  position: absolute;
+  top: 3%;
+  left: 3%;
+  z-index: 20;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.nav-link {
+  width: max-content;
+
+  font-size: clamp(0.95rem, 1.05vw, 1.15rem);
+  letter-spacing: 0.18em;
+  font-weight: 500;
+
+  color: rgba(255,255,255,0.74);
+  cursor: pointer;
+
+  padding: 0.2rem 0 0.35rem;
+  transition:
+    color 0.28s ease,
+    transform 0.28s ease,
+    text-shadow 0.28s ease,
+    opacity 0.28s ease;
+}
+
+.nav-link::after {
+  content: "";
+  display: block;
+  margin-top: 0.38rem;
+  width: 2.2rem;
+  height: 1px;
+
+  background: linear-gradient(
+    90deg,
+    rgba(255,140,160,0.9),
+    rgba(255,255,255,0.18)
+  );
+
+  transition: width 0.28s ease, opacity 0.28s ease;
+  opacity: 0.85;
+}
+
+.nav-link:hover {
+  color: rgba(255,235,238,0.98);
+  transform: translateX(4px);
+  text-shadow: 0 0 0.45vw rgba(255,90,110,0.2);
+}
+
+.nav-link:hover::after {
+  width: 3.3rem;
+}
+.detail-trigger {
+  position: absolute;
+  left: 50%;
+  bottom: 10%;
+  transform: translateX(-50%);
+  z-index: 12;
+
+  padding: 0.7rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.16);
+
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  color: rgba(255,255,255,0.78);
+  font-size: clamp(0.72rem, 0.8vw, 0.82rem);
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  cursor: pointer;
+
+  box-shadow:
+    0 0 0.8vw rgba(120, 10, 24, 0.12),
+    inset 0 0 0.3vw rgba(255,255,255,0.05);
+
+  transition: all 0.3s ease;
+}
+
+.detail-trigger:hover {
+  color: rgba(255, 220, 225, 0.95);
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255, 150, 165, 0.28);
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow:
+    0 0 1vw rgba(180, 20, 40, 0.2),
+    inset 0 0 0.4vw rgba(255,255,255,0.07);
+}
+
+.gem-detail-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.45s ease;
+}
+
+.gem-detail-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.gem-detail-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.gem-detail-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(58vw, 52rem);
+  height: min(88vh, 56rem);
+  transform: translate(-50%, -50%) scale(0.94);
+
+  border-radius: 1.2rem;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: linear-gradient(
+  180deg,
+  rgba(255,255,255,0.10) 0%,
+  rgba(255,255,255,0.04) 100%
+);
+
+backdrop-filter: blur(22px);
+-webkit-backdrop-filter: blur(22px);
+
+ border: 1px solid rgba(255,255,255,0.18);
+
+box-shadow:
+  0 0 2vw rgba(0,0,0,0.18),
+  0 0 2.2vw rgba(255,255,255,0.05),
+  inset 0 0 1vw rgba(255,255,255,0.08);
+
+  overflow: hidden;
+  transition: transform 0.45s ease;
+}
+
+.gem-detail-modal.show .gem-detail-panel {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.gem-detail-head {
+  position: absolute;
+  top: 1rem;
+  left: 1.1rem;
+  right: 3.5rem;
+  z-index: 2;
+}
+
+.gem-detail-kicker {
+  font-size: 0.68rem;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 0.35rem;
+}
+
+.gem-detail-head h3 {
+  margin: 0;
+  font-size: clamp(1rem, 1.1vw, 1.2rem);
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  color: rgba(255,255,255,0.92);
+}
+
+.gem-detail-close {
+  position: absolute;
+  top: 0.8rem;
+  right: 0.9rem;
+  z-index: 3;
+
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.8);
+  font-size: 1.1rem;
+  line-height: 1;
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  transition: all 0.25s ease;
+}
+
+.gem-detail-close:hover {
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,1);
+}
+
+.gem-detail-viewer {
+  position: absolute;
+  inset: 4.6rem 0 0 0;
+}
+
+.gem-detail-viewer spline-viewer {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 1;
+  transform: none;
+}
+
+@media (max-width: 900px) {
+  .gem-detail-panel {
+    width: 88vw;
+    height: 68vh;
+  }
+
+  .detail-trigger {
+    bottom: 11%;
+    font-size: 0.72rem;
+  }
+}
+.interactive-panel {
+  cursor: pointer;
+}
+
+.interactive-panel .panel-card {
+  transition:
+    transform 0.35s ease,
+    box-shadow 0.35s ease,
+    border-color 0.35s ease,
+    background 0.35s ease;
+}
+
+.interactive-panel:hover .panel-card {
+  transform: translateY(-6px) scale(1.02);
+  border-color: rgba(255, 170, 180, 0.22);
+  box-shadow:
+    0 0 2.2vw rgba(0, 0, 0, 0.24),
+    0 0 1.3vw rgba(180, 20, 40, 0.14),
+    inset 0 0 0.7vw rgba(255, 255, 255, 0.05);
+}
+.card-detail-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.card-detail-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.card-detail-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.38);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.card-detail-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(62vw, 58rem);
+  height: min(82vh, 44rem);
+  transform: translate(-50%, -50%) scale(0.92);
+
+  border-radius: 1.35rem;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.11) 0%,
+    rgba(255,255,255,0.05) 100%
+  );
+
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+
+  box-shadow:
+    0 0 2vw rgba(0,0,0,0.22),
+    0 0 2vw rgba(255,255,255,0.04),
+    inset 0 0 1vw rgba(255,255,255,0.08);
+
+  overflow: hidden;
+  transition: transform 0.35s ease;
+}
+
+.card-detail-modal.show .card-detail-panel {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.card-detail-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 3;
+
+  width: 2.1rem;
+  height: 2.1rem;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.82);
+  font-size: 1.15rem;
+  line-height: 1;
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  transition: all 0.25s ease;
+}
+
+.card-detail-close:hover {
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,1);
+}
+
+.card-detail-body {
+  width: 100%;
+  height: 100%;
+  padding: 2.3rem;
+  box-sizing: border-box;
+}
+
+.card-detail-layout {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 1.6rem;
+  align-items: stretch;
+  height: 100%;
+}
+
+.card-detail-image-wrap {
+  height: 100%;
+  border-radius: 1rem;
+  overflow: hidden;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+
+.card-detail-image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.card-detail-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  color: rgba(255,255,255,0.9);
+}
+
+.card-detail-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 0.8rem;
+}
+
+.card-detail-title {
+  margin: 0 0 1rem 0;
+  font-size: clamp(1.4rem, 1.8vw, 2rem);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: rgba(255,255,255,0.95);
+}
+
+.card-detail-copy {
+  font-size: clamp(0.95rem, 1vw, 1.05rem);
+  line-height: 1.9;
+  color: rgba(255,255,255,0.76);
+
+  overflow-y: auto;
+  max-height: min(24rem, 48vh);
+
+  padding-right: 0.5rem;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.22) transparent;
+}
+
+@media (max-width: 900px) {
+  .card-detail-panel {
+    width: 90vw;
+    height: 80vh;
+  }
+
+  .card-detail-layout {
+    grid-template-columns: 1fr;
+    grid-template-rows: 42% 1fr;
+  }
+
+  .card-detail-body {
+    padding: 1.4rem;
+  }
+}
+.card-detail-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+
+  padding-top: 3.2rem;
+}
+.card-detail-copy::-webkit-scrollbar {
+  width: 5px;
+}
+
+.card-detail-copy::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.card-detail-copy::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px;
+}
+
+.card-detail-copy::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.3);
+}
+  </style>
+</head>
+<body>
+
+  <div class="viewport">
+    <div class="game-container">
+
+    <div class="top-nav">
+  <div class="nav-link" onclick="goMenu()">MAIN MENU</div>
+  <div class="nav-link" onclick="goCollectGem()">COLLECT YOUR GEM</div>
+</div>
+  
+</div>
+
+    <div class="mode-toggle" id="modeToggle">
+    <div class="toggle-knob"></div>
+    </div>
+      <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.73/build/spline-viewer.js"></script>
+
+      <spline-viewer
+        id="splineScene"
+        url="https://prod.spline.design/YaEb1VDnTvwzHFDz/scene.splinecode">
+      </spline-viewer>
+      
+      <!-- 파티클 -->
+      <div class="particles" id="particles"></div>
+      <!-- 좌측 클릭 영역 -->
+<!-- 좌측 카드: 이미지 중심 -->
+<div class="info-panel left-panel interactive-panel" id="leftPanel" data-panel="left">
+  <div class="panel-card image-card">
+    <div class="panel-image full-image">
+      <img src="가넷2.jpg" alt="가넷 이미지">
+      <div class="image-overlay-text">
+        <h2>Garnet</h2>
+        <p>January Birthstone</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 우측 카드: 설명 중심 -->
+<div class="info-panel right-panel interactive-panel" id="rightPanel" data-panel="right">
+  <div class="panel-card text-card">
+    <div class="panel-content">
+      <div class="panel-label">SYMBOLISM</div>
+      <h2>가넷</h2>
+      <p>
+        어둠 속에서 가장 먼저 살아나는 것은,</p> 
+        <p>
+        <span class="accent">붉은 빛</span>입니다.  
+      </p>
+      <p>
+        가넷은 단순한 색이 아니라,  
+        내면 깊은 곳에서 천천히 타오르는 감정의 형태입니다.
+      </p>
+      <p>
+        겉으로는 고요하게 빛나지만,  
+        그 안에는 꺼지지 않는 불꽃이 끊임없이 흔들리고 있습니다.
+      </p>
+
+      <p>
+        빛이 스칠 때마다 드러나는 붉은 결은  
+        숨겨져 있던 감정이 표면으로 떠오르는 순간을 닮아 있으며,  
+        그 미묘한 변화는 조용하지만 분명하게 존재를 드러냅니다. 
+      </p>
+    </div>
+  </div>
+</div>
+<div class="hint">
+  Drag down to hide · Drag up to reveal
+</div>
+<div class="detail-trigger" id="detailTrigger">EXPLORE GARNET</div>
+<div class="gem-detail-modal" id="gemDetailModal">
+  <div class="gem-detail-backdrop" id="gemDetailBackdrop"></div>
+
+  <div class="gem-detail-panel">
+    <button class="gem-detail-close" id="gemDetailClose" aria-label="닫기">×</button>
+
+    <div class="gem-detail-head">
+      <div class="gem-detail-kicker">DEEP VIEW</div>
+      <h3>Garnet Structure</h3>
+    </div>
+
+    <div class="gem-detail-viewer">
+      <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.87/build/spline-viewer.js"></script>
+      <spline-viewer url="https://prod.spline.design/Da6N9cHdY0WMqidL/scene.splinecode"></spline-viewer>
+    </div>
+  </div>
+</div>
+<div class="card-detail-modal" id="cardDetailModal">
+  <div class="card-detail-backdrop" id="cardDetailBackdrop"></div>
+
+  <div class="card-detail-panel">
+    <button class="card-detail-close" id="cardDetailClose" aria-label="닫기">×</button>
+
+    <div class="card-detail-body" id="cardDetailBody">
+      <!-- JS로 내용 채움 -->
+    </div>
+  </div>
+</div>
+<div class="music-btn" id="musicBtn">
+  <div class="music-inner"></div>
+  <div class="music-label">music on</div>
+</div>
+      <!-- 음악 -->
+      <audio id="bgm" loop>
+        <source src="가넷노래.mp3" type="audio/mpeg">
+      </audio>
+<div class="transition-overlay" id="transitionOverlay"></div>
+    </div>
+  </div>
+
+  <script>
+  const spline = document.getElementById("splineScene");
+  const audio = document.getElementById("bgm");
+  const particlesWrap = document.getElementById("particles");
+  const leftPanel = document.getElementById("leftPanel");
+  const rightPanel = document.getElementById("rightPanel");
+  const toggle = document.getElementById("modeToggle");
+  const overlay = document.getElementById("transitionOverlay");
+  const musicBtn = document.getElementById("musicBtn");
+  const musicLabel = document.querySelector(".music-label");
+  const detailTrigger = document.getElementById("detailTrigger");
+  const gemDetailModal = document.getElementById("gemDetailModal");
+  const gemDetailClose = document.getElementById("gemDetailClose");
+  const gemDetailBackdrop = document.getElementById("gemDetailBackdrop");
+  const cardDetailModal = document.getElementById("cardDetailModal");
+  const cardDetailBackdrop = document.getElementById("cardDetailBackdrop");
+  const cardDetailClose = document.getElementById("cardDetailClose");
+  const cardDetailBody = document.getElementById("cardDetailBody");
+  const interactivePanels = document.querySelectorAll(".interactive-panel");
+
+  let panelsVisible = false;
+  let startY = 0;
+  let endY = 0;
+  const swipeThreshold = 40;
+
+ window.addEventListener("load", () => {
+  setTimeout(() => {
+    spline.classList.add("show");
+
+    createParticles();
+    particlesWrap.classList.add("show");
+
+  }, 150);
+
+  setTimeout(() => {
+    showPanels();
+  }, 4300);
+});
+
+ musicBtn.addEventListener("click", async (e) => {
+  e.stopPropagation();
+
+  audio.volume = 0.45;
+
+  try {
+    if (audio.paused) {
+      await audio.play();
+      musicBtn.classList.add("playing");
+      musicLabel.textContent = "music off";
+    } else {
+      audio.pause();
+      musicBtn.classList.remove("playing");
+      musicLabel.textContent = "music on";
+    }
+  } catch (err) {
+    console.error("오디오 재생 실패:", err);
+  }
+});
+
+  function showPanels() {
+    panelsVisible = true;
+
+    leftPanel.classList.remove("hide");
+    rightPanel.classList.remove("hide");
+
+    leftPanel.classList.add("show");
+    rightPanel.classList.add("show");
+  }
+
+  function hidePanels() {
+    panelsVisible = false;
+
+    leftPanel.classList.remove("show");
+    rightPanel.classList.remove("show");
+
+    leftPanel.classList.add("hide");
+    rightPanel.classList.add("hide");
+  }
+
+  // 모바일/터치: 드래그로 동시에 넣고 꺼내기
+  window.addEventListener("touchstart", (e) => {
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+
+  window.addEventListener("touchend", (e) => {
+    endY = e.changedTouches[0].clientY;
+    handleSwipe();
+  }, { passive: true });
+
+  // 데스크톱에서도 마우스 드래그 가능하게
+  let isDragging = false;
+
+  window.addEventListener("mousedown", (e) => {
+    isDragging = true;
+    startY = e.clientY;
+  });
+
+  window.addEventListener("mouseup", (e) => {
+    if (!isDragging) return;
+    isDragging = false;
+    endY = e.clientY;
+    handleSwipe();
+  });
+
+  function handleSwipe() {
+    const diff = endY - startY;
+
+    // 아래로 드래그 = 카드 숨김
+    if (diff > swipeThreshold && panelsVisible) {
+      hidePanels();
+    }
+
+    // 위로 드래그 = 카드 등장
+    if (diff < -swipeThreshold && !panelsVisible) {
+      showPanels();
+    }
+  }
+
+  function createParticles() {
+    const total = 100;
+
+    for (let i = 0; i < total; i++) {
+      const p = document.createElement("div");
+      p.className = "particle";
+
+      let left, top;
+
+      while (true) {
+        left = Math.random() * 100;
+        top = Math.random() * 100;
+
+        const dx = left - 50;
+        const dy = top - 50;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+
+        if (distance > 40) break;
+      }
+
+      p.style.left = `${left}%`;
+      p.style.top = `${top}%`;
+
+      let size;
+      const rand = Math.random();
+
+      if (rand < 0.65) {
+      size = Math.random() * 0.22 + 0.08;
+      } else if (rand < 0.9) {
+      size = Math.random() * 0.28 + 0.12;
+      } else {
+      size = Math.random() * 0.22 + 0.24;
+      }
+
+      p.style.setProperty("--size", `${size}vw`);
+
+      const red = 245 + Math.random() * 10;
+      const green = 200 + Math.random() * 40;
+      const blue = 220 + Math.random() * 30;
+      const opacity = 0.6 + Math.random() * 0.35;
+
+      const color = `rgba(${red}, ${green}, ${blue}, ${opacity})`;
+      p.style.setProperty("--color", color);
+
+      const floatDuration = 6 + Math.random() * 10;
+      const flickerDuration = 2 + Math.random() * 4;
+      const delay = Math.random() * 6;
+
+      p.style.animationDuration = `${floatDuration}s, ${flickerDuration}s`;
+      p.style.animationDelay = `${delay}s, ${Math.random() * 2}s`;
+
+      particlesWrap.appendChild(p);
+    }
+  }
+  toggle.addEventListener("click", () => {
+  toggle.classList.toggle("active");
+
+  if (toggle.classList.contains("active")) {
+    enterDarkMode();
+  } else {
+    exitDarkMode();
+  }
+});
+function enterDarkMode() {
+  spline.style.transform = "scale(1.1)";
+  spline.style.filter = "brightness(0.6) blur(2px)";
+  particlesWrap.style.opacity = "0.1";
+
+  overlay.classList.add("show");
+
+  setTimeout(() => {
+    window.location.href = "ganet star view.html";
+  }, 800);
+}
+
+function exitDarkMode() {
+  spline.style.transform = "scale(1)";
+  spline.style.filter = "none";
+  particlesWrap.style.opacity = "1";
+}
+function goMenu() {
+  overlay.classList.add("show");
+
+  setTimeout(() => {
+    window.location.href = "ThegemIam.html";
+  }, 700);
+}
+
+function goCollectGem() {
+  overlay.classList.add("show");
+
+  setTimeout(() => {
+    window.location.href = "collect-your-gem.html";
+  }, 700);
+}
+function goDetail() {
+  overlay.classList.add("show");
+
+  setTimeout(() => {
+    window.location.href = "garnet-detail.html";
+  }, 700);
+}
+function openGemDetail() {
+  gemDetailModal.classList.add("show");
+}
+
+function closeGemDetail() {
+  gemDetailModal.classList.remove("show");
+}
+
+detailTrigger.addEventListener("click", (e) => {
+  e.stopPropagation();
+  openGemDetail();
+});
+
+gemDetailClose.addEventListener("click", closeGemDetail);
+gemDetailBackdrop.addEventListener("click", closeGemDetail);
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeGemDetail();
+  }
+});
+function openCardDetail(type) {
+  if (type === "left") {
+  cardDetailBody.innerHTML = `
+    <div class="card-detail-layout">
+      <div class="card-detail-image-wrap">
+        <img src="가넷2.jpg" alt="가넷 이미지">
+      </div>
+
+      <div class="card-detail-text">
+        <div class="card-detail-kicker">ARTWORK NOTE</div>
+        <h3 class="card-detail-title">Visual Interpretation of Garnet</h3>
+
+        <div class="card-detail-copy">
+          이 일러스트는 가넷을 단순한 보석 오브제로 보여주는 것이 아니라,
+          하나의 감정과 분위기로 확장해 해석하는 데서 출발했습니다.
+          저는 가넷이 가진 붉은 색을 ‘강렬함’ 하나로만 보지 않고,
+          조용하지만 깊게 남는 감정의 층위로 표현하고 싶었습니다.
+          <br><br>
+
+          그래서 형태는 지나치게 무겁거나 고정된 물성보다,
+          빛에 따라 흔들리고 살아나는 유기적인 흐름을 중심으로 구성했습니다.
+          중심에 시선을 모으는 구조를 두면서도,
+          주변 요소들이 함께 떠다니듯 배치되도록 해서
+          보석이 단독으로 존재하기보다 하나의 세계를 만드는 방식으로 전개했습니다.
+          <br><br>
+
+          화면 전체에 퍼지는 붉은 결, 반짝이는 입자, 그리고 유리처럼 투명한 질감은
+          가넷 내부에 잠들어 있는 에너지가 천천히 표면으로 드러나는 순간을 상상하며 만든 요소들입니다.
+          이는 실제 광물의 물성을 그대로 재현하기보다,
+          가넷이 불러오는 감각과 인상을 시각 언어로 번역한 결과에 가깝습니다.
+          <br><br>
+
+          결국 이 작업은 보석을 보는 장면이라기보다,
+          가넷이라는 존재가 가진 분위기와 감정을 하나의 공간 안에서 체험하도록 만드는 시도입니다.
+          저는 이 일러스트를 통해
+          ‘보석을 설명하는 이미지’보다
+          ‘보석이 가진 정서를 보여주는 이미지’를 만들고자 했습니다.
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+  if (type === "right") {
+  cardDetailBody.innerHTML = `
+    <div class="card-detail-layout">
+
+      <div class="card-detail-image-wrap">
+        <img src="가넷 인포.png" alt="가넷 상징 이미지">
+      </div>
+
+      <div class="card-detail-text">
+        <div class="card-detail-kicker">BIRTHSTONE MEANING</div>
+        <h3 class="card-detail-title">Truth and Friendship</h3>
+
+        <div class="card-detail-copy">
+          가넷은 1월의 탄생석으로, 오래전부터 진실과 우정을 상징하는 보석으로 여겨져 왔습니다.
+          저는 이 의미를 단순히 ‘붉은 보석’이라는 표면적인 이미지로 보여주기보다,
+          관계 안에서 오래 남는 감정의 밀도와 진심의 온도로 풀어내고 싶었습니다.
+          <br><br>
+
+          그래서 화면의 중심에는 강한 붉은 빛을 두고,
+          그 주위로 결이 퍼져나가는 구조를 만들었습니다.
+          이것은 한 사람의 진심이 바깥으로 번져나가며
+          관계를 밝히고 연결시키는 흐름을 상징합니다.
+          <br><br>
+
+          가넷이 가진 진실은 날카롭고 차가운 선언이라기보다,
+          시간이 지나도 쉽게 사라지지 않는 깊은 마음에 가깝다고 느꼈습니다.
+          우정 또한 순간적인 감정보다,
+          오래 축적되며 서로를 지탱하는 힘이라고 생각했습니다.
+          <br><br>
+
+          이 작업은 그런 가넷의 의미를
+          ‘빛’, ‘결’, 그리고 ‘중심에서 퍼져나가는 에너지’로 시각화한 결과입니다.
+          붉은 색은 열정만이 아니라,
+          오래 지속되는 신뢰와 변하지 않는 진심의 형태로 존재하도록 구성했습니다.
+        </div>
+      </div>
+
+    </div>
+  `;
+}
+
+  cardDetailModal.classList.add("show");
+}
+
+function closeCardDetail() {
+  cardDetailModal.classList.remove("show");
+}
+
+interactivePanels.forEach((panel) => {
+  panel.addEventListener("click", () => {
+    openCardDetail(panel.dataset.panel);
+  });
+});
+
+cardDetailClose.addEventListener("click", closeCardDetail);
+cardDetailBackdrop.addEventListener("click", closeCardDetail);
+
+window.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeCardDetail();
+  }
+});
+</script>
+
+</body>
+</html>

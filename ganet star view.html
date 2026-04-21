@@ -1,0 +1,1088 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <title>Ganet star view</title>
+
+  <style>
+  html, body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      overflow: hidden;
+      width: 100%;
+      height: 100%;
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    .viewport {
+      position: fixed;
+      inset: 0;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      background: #000;
+    }
+
+    spline-viewer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+
+      opacity: 0;
+      transform: scale(1.04);
+      transition: opacity 1.6s ease-out, transform 1.6s ease-out;
+    }
+
+    spline-viewer.show {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+/* 처음 숨김 + 페이드 */
+.show-delayed {
+  opacity: 0;
+  transition: opacity 1.2s ease;
+}
+
+.show-delayed.visible {
+  opacity: 1;
+}
+
+@keyframes floatOnly {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-0.6vw);
+  }
+}
+
+.constellation-wrap {
+  position: absolute;
+  left: 21%;
+  top: 45%;
+  transform: translateY(-50%);
+  z-index: 5;
+}
+
+.constellation-img {
+  width: clamp(17rem, 62vw, 65vw);
+  max-width: 78vw;
+  opacity: 0.92;
+  pointer-events: auto;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-drag: none;
+  display: block;
+
+  filter:
+    drop-shadow(0 0 0.45vw rgba(255, 216, 216, 0.9))
+    drop-shadow(0 0 1vw rgba(255, 161, 169, 0.5))
+    drop-shadow(0 0 2vw rgba(255, 144, 144, 0.28));
+
+  mix-blend-mode: screen;
+  animation: floatOnly 6s ease-in-out infinite;
+  transition: filter 0.5s ease, transform 0.3s ease;
+}
+
+.constellation-img.dragging {
+  cursor: grabbing;
+  filter:
+    drop-shadow(0 0 0.6vw rgba(255, 240, 240, 0.966))
+    drop-shadow(0 0 1.2vw rgba(255, 190, 190, 0.6))
+    drop-shadow(0 0 2.4vw rgba(255, 175, 175, 0.45));
+  transform: scale(1.02);
+}
+
+/* 하단 인포 패널 */
+.info-panel {
+  position: absolute;
+  bottom: 5%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+  pointer-events: auto;
+  transition: all 0.5s ease;
+}
+
+.text-card {
+  width: clamp(17rem, 60vw, 70rem);
+  max-width: 86vw;
+  height: auto;
+}
+
+.panel-content {
+  display: flex;
+  flex-direction: row;
+  gap: clamp(0.9rem, 2vw, 2rem);
+  align-items: flex-start;
+  padding: clamp(0.9rem, 1.5vw, 1.2rem) clamp(1rem, 2vw, 1.5rem);
+}
+
+.panel-label {
+  margin-bottom: 0.7rem;
+  font-size: clamp(0.58rem, 0.72vw, 0.76rem);
+  letter-spacing: 0.18em;
+  color: rgba(255, 255, 255, 0.48);
+}
+
+.panel-content h2 {
+  margin: 0 0 0.9rem 0;
+  font-size: clamp(0.9rem, 1.1vw, 1.22rem);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  color: rgba(255, 255, 255, 0.94);
+}
+
+.panel-content p {
+  margin: 0 0 0.95rem 0;
+  font-size: clamp(0.68rem, 0.82vw, 0.93rem);
+  line-height: 1.7;
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.panel-content::after {
+  content: "";
+  margin-top: auto;
+  width: 32%;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 140, 140, 0.9),
+    rgba(255, 255, 255, 0)
+  );
+  opacity: 0.8;
+}
+
+.accent {
+  color: #ffb7b7;
+  text-shadow: 0 0 0.6vw rgba(255, 180, 180, 0.25);
+}
+
+.panel-card {
+  overflow: hidden;
+  border-radius: 0.8rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.11) 0%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow:
+    0 0 1.8vw rgba(0, 0, 0, 0.22),
+    inset 0 0 0.7vw rgba(255, 255, 255, 0.035),
+    inset 0 0 1vw rgba(110, 0, 20, 0.06);
+}
+
+.guide-text {
+  position: absolute;
+  top: 6%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 7;
+
+  font-size: clamp(0.62rem, 1vw, 1.1rem);
+  letter-spacing: 0.08em;
+  color: rgba(255, 165, 165, 0.85);
+  text-align: center;
+  white-space: nowrap;
+
+  text-shadow:
+    0 0 0.5vw rgba(255, 255, 255, 0.4),
+    0 0 1.2vw rgba(255, 180, 200, 0.25);
+
+  opacity: 0;
+  animation: floatGuide 3s ease-in-out infinite;
+}
+
+@keyframes floatGuide {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(-0.4vw); }
+}
+
+.music-btn {
+  position: absolute;
+  bottom: 6%;
+  right: 4%;
+  width: clamp(2.5rem, 3.2vw, 3.2rem);
+  height: clamp(2.5rem, 3.2vw, 3.2rem);
+  border-radius: 50%;
+  z-index: 10;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  box-shadow:
+    0 0 0.8vw rgba(255, 180, 180, 0.25),
+    inset 0 0 0.35vw rgba(255, 255, 255, 0.1);
+
+  transition: all 0.3s ease;
+}
+
+.music-btn:hover {
+  transform: scale(1.08);
+}
+
+.music-inner {
+  width: clamp(0.7rem, 0.9vw, 0.9rem);
+  height: clamp(0.7rem, 0.9vw, 0.9rem);
+  border-radius: 50%;
+  background: #ffb7b7;
+  box-shadow:
+    0 0 0.6vw rgba(255, 180, 180, 0.6),
+    0 0 1.2vw rgba(255, 120, 120, 0.4);
+}
+
+.music-label {
+  position: absolute;
+  left: 50%;
+  bottom: -1.55rem;
+  transform: translateX(-50%);
+
+  display: block;
+  width: max-content;
+  min-width: 6.2rem;
+
+  font-size: 0.9rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+
+  text-align: center;
+  white-space: nowrap;
+
+  color: rgba(255, 255, 255, 0.62);
+
+  transition: color 0.35s ease, text-shadow 0.35s ease;
+}
+
+.music-btn.playing .music-label {
+  color: rgba(255, 180, 180, 0.9);
+  text-shadow: 0 0 0.4vw rgba(255, 150, 150, 0.4);
+}
+
+.info-panel.hidden {
+  opacity: 0;
+  transform: translateX(-50%) translateY(40px);
+  pointer-events: none;
+}
+
+.particles {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 28%;
+  height: 28%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  z-index: 4;
+}
+
+.particle {
+  position: absolute;
+  width: 0.32vw;
+  height: 0.32vw;
+  min-width: 2px;
+  min-height: 2px;
+  max-width: 4px;
+  max-height: 4px;
+  border-radius: 50%;
+
+  background: rgba(255, 200, 205, 0.753);
+
+  box-shadow:
+    0 0 0.7vw rgba(255, 180, 186, 0.95),
+    0 0 1.4vw rgba(255, 120, 120, 0.75),
+    0 0 2.2vw rgba(255, 90, 90, 0.45);
+
+  opacity: 0;
+  animation: floatParticle linear infinite;
+}
+
+@keyframes floatParticle {
+  0% {
+    transform: translateY(0) scale(0.7);
+    opacity: 0;
+  }
+  20% {
+    opacity: 0.95;
+  }
+  100% {
+    transform: translateY(-5vw) scale(1);
+    opacity: 0;
+  }
+}
+
+/* 작은 폰만 최소 보정 */
+@media (max-width: 600px) {
+  .constellation-wrap {
+    left: 15%;
+    top: 43%;
+  }
+
+  .constellation-img {
+    width: clamp(14rem, 70vw, 24rem);
+  }
+
+  .text-card {
+    width: clamp(14rem, 82vw, 24rem);
+  }
+
+  .panel-content {
+    gap: 0.8rem;
+    padding: 0.8rem 0.9rem;
+  }
+
+  .guide-text {
+    top: 7%;
+    font-size: clamp(0.56rem, 2.4vw, 0.78rem);
+  }
+
+  .panel-toggle {
+    right: 16%;
+  }
+
+  .music-btn {
+    right: 5%;
+  }
+}
+.constellation-img {
+  touch-action: none;
+}
+.mode-toggle {
+  position: absolute;
+  top: 3%;
+  right: 3%;
+  width: 3.35rem;
+  height: 1.72rem;
+  border-radius: 999px;
+  z-index: 20;
+  cursor: pointer;
+
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.14);
+
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    opacity 0.25s ease;
+}
+
+.mode-toggle:hover {
+  background: rgba(255,255,255,0.09);
+  border-color: rgba(255,255,255,0.2);
+}
+
+.toggle-knob {
+  position: absolute;
+  top: 50%;
+  left: 0.18rem;
+  width: 1.28rem;
+  height: 1.28rem;
+  border-radius: 50%;
+  transform: translateY(-50%);
+
+  background: rgba(255,255,255,0.88);
+  transition:
+    left 0.28s ease,
+    background 0.28s ease,
+    opacity 0.28s ease;
+}
+
+.mode-toggle.active {
+  background: rgba(120, 18, 36, 0.24);
+  border-color: rgba(255, 170, 185, 0.18);
+}
+
+.mode-toggle.active .toggle-knob {
+  left: 1.88rem;
+  background: rgba(255, 214, 220, 0.95);
+}
+
+.transition-overlay {
+  position: fixed;
+  inset: 0;
+  background: #000;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 50;
+  transition: opacity 0.8s ease;
+}
+
+.transition-overlay.show {
+  opacity: 1;
+}
+.top-nav {
+  position: absolute;
+  top: 3%;
+  left: 3%;
+  z-index: 20;
+
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.nav-link {
+  width: max-content;
+  font-size: clamp(0.95rem, 1.05vw, 1.15rem);
+  letter-spacing: 0.18em;
+  font-weight: 500;
+  color: rgba(255,255,255,0.74);
+  cursor: pointer;
+  padding: 0.2rem 0 0.35rem;
+  transition:
+    color 0.28s ease,
+    transform 0.28s ease,
+    text-shadow 0.28s ease;
+}
+
+.nav-link::after {
+  content: "";
+  display: block;
+  margin-top: 0.38rem;
+  width: 2.2rem;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    rgba(255,140,160,0.9),
+    rgba(255,255,255,0.18)
+  );
+  transition: width 0.28s ease;
+  opacity: 0.85;
+}
+
+.nav-link:hover {
+  color: rgba(255,235,238,0.98);
+  transform: translateX(4px);
+  text-shadow: 0 0 0.45vw rgba(255,90,110,0.2);
+}
+
+.nav-link:hover::after {
+  width: 3.3rem;
+}
+.panel-close {
+  position: absolute;
+  top: 0.85rem;
+  right: 0.9rem;
+  z-index: 12;
+
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.82);
+  font-size: 1.1rem;
+  line-height: 1;
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+
+  transition: all 0.25s ease;
+}
+
+.panel-close:hover {
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,1);
+}
+.transition-overlay.show {
+  opacity: 1;
+}
+.constellation-detail-modal {
+  position: absolute;
+  inset: 0;
+  z-index: 35;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.constellation-detail-modal.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.constellation-detail-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.38);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.constellation-detail-panel {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(62vw, 58rem);
+  height: min(82vh, 44rem);
+  transform: translate(-50%, -50%) scale(0.92);
+
+  border-radius: 1.35rem;
+  border: 1px solid rgba(255,255,255,0.16);
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.11) 0%,
+    rgba(255,255,255,0.05) 100%
+  );
+
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+
+  box-shadow:
+    0 0 2vw rgba(0,0,0,0.22),
+    0 0 2vw rgba(255,255,255,0.04),
+    inset 0 0 1vw rgba(255,255,255,0.08);
+
+  overflow: hidden;
+  transition: transform 0.35s ease;
+}
+
+.constellation-detail-modal.show .constellation-detail-panel {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+.constellation-detail-close {
+  position: absolute;
+  top: 0.9rem;
+  right: 0.9rem;
+  z-index: 3;
+
+  width: 2.1rem;
+  height: 2.1rem;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+
+  background: rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.82);
+  font-size: 1.15rem;
+  line-height: 1;
+
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.constellation-detail-body {
+  display: grid;
+  grid-template-columns: 1fr 1.15fr;
+  gap: 1.4rem;
+  width: 100%;
+  height: 100%;
+  padding: 2.2rem;
+  box-sizing: border-box;
+}
+
+.constellation-detail-image-wrap {
+  height: 100%;
+  border-radius: 1rem;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+}
+
+.constellation-detail-image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.constellation-detail-text {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  min-height: 0;
+
+  padding-top: 3.1rem;
+}
+
+.constellation-detail-kicker {
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.45);
+  margin-bottom: 0.8rem;
+}
+
+.constellation-detail-title {
+  margin: 0 0 1rem 0;
+  font-size: clamp(1.4rem, 1.8vw, 2rem);
+  font-weight: 600;
+  color: rgba(255,255,255,0.95);
+}
+
+.constellation-detail-copy {
+  font-size: clamp(0.95rem, 1vw, 1.05rem);
+  line-height: 1.9;
+  color: rgba(255,255,255,0.76);
+
+  overflow-y: auto;
+  max-height: min(24rem, 52vh);
+
+  padding-right: 0.45rem;
+
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.22) transparent;
+}
+.constellation-detail-copy::-webkit-scrollbar {
+  width: 5px;
+}
+
+.constellation-detail-copy::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.constellation-detail-copy::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.18);
+  border-radius: 999px;
+}
+
+.constellation-detail-copy::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.32);
+}
+.panel-handle {
+  position: absolute;
+  left: 50%;
+  bottom: 2.2%;
+  transform: translateX(-50%);
+  z-index: 11;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+
+  opacity: 1;
+  transition: opacity 0.35s ease, transform 0.35s ease;
+}
+
+.panel-handle.hidden {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateX(-50%) translateY(8px);
+}
+
+.panel-handle-bar {
+  width: 3.2rem;
+  height: 0.26rem;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.35);
+  box-shadow: 0 0 0.8vw rgba(255,180,180,0.15);
+}
+
+.panel-handle span {
+  font-size: 0.68rem;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.52);
+  text-transform: uppercase;
+}
+.constellation-trigger {
+  position: absolute;
+  left: 50%;
+  bottom: 22%;
+  transform: translateX(-50%);
+  z-index: 12;
+
+  padding: 0.7rem 1.4rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.16);
+
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+
+  color: rgba(255,255,255,0.78);
+  font-size: clamp(0.72rem, 0.8vw, 0.82rem);
+  letter-spacing: 0.16em;
+  white-space: nowrap;
+  cursor: pointer;
+
+  box-shadow:
+    0 0 0.8vw rgba(120, 10, 24, 0.12),
+    inset 0 0 0.3vw rgba(255,255,255,0.05);
+
+  transition: all 0.3s ease;
+}
+
+.constellation-trigger:hover {
+  color: rgba(255, 220, 225, 0.95);
+  background: rgba(255,255,255,0.08);
+  border-color: rgba(255, 150, 165, 0.28);
+  transform: translateX(-50%) translateY(-2px);
+  box-shadow:
+    0 0 1vw rgba(180, 20, 40, 0.2),
+    inset 0 0 0.4vw rgba(255,255,255,0.07);
+}
+
+.constellation-trigger:active {
+  transform: translateX(-50%) translateY(1px);
+}
+
+@media (max-width: 900px) {
+  .constellation-trigger {
+    bottom: 16%;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.68rem;
+  }
+}
+  </style>
+</head>
+<body>
+  <div class="viewport">
+    <div class="game-container">
+    
+    <div class="top-nav">
+  <div class="nav-link" onclick="goMenu()">MAIN MENU</div>
+  <div class="nav-link" onclick="goCollectStar()">COLLECT YOUR STAR</div>
+</div>
+    <div class="mode-toggle active" id="modeToggle">
+  <div class="toggle-knob"></div>
+</div>
+      <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.81/build/spline-viewer.js"></script>
+
+      <spline-viewer
+  id="splineScene"
+  url="https://prod.spline.design/en3MYAnPexJlxieD/scene.splinecode">
+</spline-viewer>
+
+      <!-- 상단 안내문 -->
+      <div class="guide-text show-delayed">
+        마우스를 클릭하며 가넷 행성 주변을 둘러보세요!
+      </div>
+
+      <!-- 왼쪽 별자리 이미지 -->
+      <div class="constellation-wrap show-delayed">
+  <div class="particles"></div>
+  <img class="constellation-img" src="염소자리-인포-2.png" alt="염소자리" />
+</div>
+<div class="constellation-trigger show-delayed" id="constellationTrigger">
+  EXPLORE GARNET PLANET
+</div>
+      <!-- 하단 인포 패널 -->
+<div class="info-panel show-delayed" id="infoPanel">
+  <div class="panel-card text-card">
+    <button class="panel-close" id="panelClose" aria-label="닫기">×</button>
+
+    <div class="panel-content">
+      <div>
+        <div class="panel-label">CONSTELLATION</div>
+        <h2>염소자리</h2>
+      </div>
+
+      <div>
+        <p>
+          차가운 공기 속에서도 자유롭게 흐르는 별의 결은
+          고요한 밤하늘 위에 독창적인 리듬을 남깁니다.
+        </p>
+        <p>
+          염소자리는 맑고 단단한 감각 안에서
+          <span class="accent">인내와 조용한 의지</span>를 은은하게 드러냅니다.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="panel-handle hidden" id="panelHandle">
+  <div class="panel-handle-bar"></div>
+  <span>drag up</span>
+</div>
+      <!-- 음악 버튼 -->
+      <div class="music-btn" id="musicBtn">
+        <div class="music-inner"></div>
+        <div class="music-label">music on</div>
+        </div>
+        <div class="constellation-detail-modal" id="constellationDetailModal">
+  <div class="constellation-detail-backdrop" id="constellationDetailBackdrop"></div>
+
+  <div class="constellation-detail-panel">
+    <button class="constellation-detail-close" id="constellationDetailClose" aria-label="닫기">×</button>
+
+    <div class="constellation-detail-body">
+      <div class="constellation-detail-image-wrap">
+        <img src="가넷 행성 인포.png" alt="염소자리 이미지">
+      </div>
+
+      <div class="constellation-detail-text">
+        <div class="constellation-detail-kicker">PLANET NOTE</div>
+<h3 class="constellation-detail-title">Garnet Planet</h3>
+<div class="constellation-detail-copy">
+  가넷 행성은 단순히 보석을 우주 속에 배치한 이미지가 아니라,
+  가넷이 가진 붉은 에너지와 감정의 밀도를 하나의 공간으로 확장해 해석한 결과입니다.
+  <br><br>
+  저는 이 행성을 통해 가넷의 색이 지닌 열기, 깊이, 그리고 쉽게 사라지지 않는 진심의 온도를 표현하고 싶었습니다.
+  표면은 조용히 빛나지만, 그 안에서는 계속해서 붉은 결이 살아 움직이는 듯한 감각을 만들고자 했습니다.
+  <br><br>
+  행성 주변을 둘러싸는 빛과 흐름은 단순한 장식이 아니라,
+  중심에서 바깥으로 퍼져나가는 감정과 에너지의 흔적을 시각화한 것입니다.
+  이는 가넷이 상징하는 진실, 우정, 그리고 오래 지속되는 마음의 힘을 우주적인 스케일로 풀어낸 장면입니다.
+  <br><br>
+  이 작업은 보석을 하나의 물질로 보여주는 데서 멈추지 않고,
+  가넷이라는 존재가 하나의 세계가 된다면 어떤 분위기와 중력을 가질지를 상상하며 만든 시도입니다.
+</div>
+      </div>
+    </div>
+  </div>
+</div>
+        
+    </div>
+  </div>
+
+  <!-- 배경음악 -->
+<audio id="bgm" src="우주 음악.mp3" loop></audio>
+<audio id="dragSound" src="별자리 잡음.mp3" preload="auto"></audio>
+<div class="transition-overlay" id="transitionOverlay"></div>
+  <script>
+    const spline = document.getElementById("splineScene");
+
+window.addEventListener("load", () => {
+
+  // ⭐ 스플라인 먼저 살짝 등장
+  setTimeout(() => {
+    spline.classList.add("show");
+  }, 150);
+
+  // ⭐ 나머지 요소들 나중에 등장
+  setTimeout(() => {
+    document.querySelectorAll(".show-delayed").forEach(el => {
+      el.classList.add("visible");
+    });
+  }, 4000);
+
+});
+    const btn = document.getElementById("musicBtn");
+    const audio = document.getElementById("bgm");
+    const label = document.querySelector(".music-label");
+    const dragSound = document.getElementById("dragSound");
+    const toggle = document.getElementById("modeToggle");
+    const overlay = document.getElementById("transitionOverlay");
+    const wrap = document.querySelector(".constellation-wrap");
+    const img = document.querySelector(".constellation-img");
+    const panel = document.getElementById("infoPanel");
+    const panelClose = document.getElementById("panelClose");
+    const constellationDetailModal = document.getElementById("constellationDetailModal");
+    const constellationDetailBackdrop = document.getElementById("constellationDetailBackdrop");
+    const constellationDetailClose = document.getElementById("constellationDetailClose");
+    const panelHandle = document.getElementById("panelHandle");
+    const constellationTrigger = document.getElementById("constellationTrigger");
+
+
+    constellationTrigger.addEventListener("click", openConstellationDetail);
+
+    btn.addEventListener("click", async () => {
+      try {
+        if (audio.paused) {
+          await audio.play();
+          btn.classList.add("playing");
+          label.textContent = "music off";
+        } else {
+          audio.pause();
+          btn.classList.remove("playing");
+          label.textContent = "music on";
+        }
+      } catch (err) {
+        console.error("오디오 재생 실패:", err);
+        alert("music 파일 경로나 파일명을 확인해줘!");
+      }
+    });
+
+  let isDragging = false;
+  let startX = 0;
+  let startY = 0;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  function updateDragPosition() {
+    wrap.style.transform = `translateY(-50%) translate(${offsetX}px, ${offsetY}px)`;
+  }
+
+  img.addEventListener("mousedown", (e) => {
+  isDragging = true;
+  img.classList.add("dragging");
+
+  startX = e.clientX - offsetX;
+  startY = e.clientY - offsetY;
+
+  try {
+    dragSound.currentTime = 0;
+    dragSound.play();
+  } catch (err) {
+    console.error("드래그 효과음 재생 실패:", err);
+  }
+
+  e.preventDefault();
+});
+
+  window.addEventListener("mousemove", (e) => {
+    if (!isDragging) return;
+
+    offsetX = e.clientX - startX;
+    offsetY = e.clientY - startY;
+    updateDragPosition();
+  });
+  window.addEventListener("mouseup", (e) => {
+  isDragging = false;
+  img.classList.remove("dragging");
+
+  if (offsetY < -80 && panel.classList.contains("hidden")) {
+    showInfoPanel();
+  }
+});
+
+  window.addEventListener("touchend", () => {
+  isDragging = false;
+  img.classList.remove("dragging");
+
+  if (offsetY < -80 && panel.classList.contains("hidden")) {
+    showInfoPanel();
+  }
+});
+function openConstellationDetail() {
+  constellationDetailModal.classList.add("show");
+}
+
+function closeConstellationDetail() {
+  constellationDetailModal.classList.remove("show");
+}
+
+constellationDetailClose.addEventListener("click", closeConstellationDetail);
+constellationDetailBackdrop.addEventListener("click", closeConstellationDetail);
+  const particleContainer = document.querySelector(".particles");
+
+  for (let i = 0; i < 28; i++) {
+    const p = document.createElement("div");
+    p.classList.add("particle");
+
+    // 랜덤 위치
+    p.style.left = Math.random() * 120 + "%";
+    p.style.top = Math.random() * 120 + "%";
+
+    // 랜덤 애니메이션 시간
+    p.style.animationDuration = 3 + Math.random() * 3 + "s";
+
+    // 랜덤 딜레이
+    p.style.animationDelay = Math.random() * 5 + "s";
+
+    particleContainer.appendChild(p);
+  }
+  // 📱 모바일 터치 드래그
+img.addEventListener("touchstart", (e) => {
+  isDragging = true;
+  img.classList.add("dragging");
+
+  const touch = e.touches[0];
+
+  startX = touch.clientX - offsetX;
+  startY = touch.clientY - offsetY;
+
+  try {
+    dragSound.currentTime = 0;
+    dragSound.play();
+  } catch (err) {}
+
+}, { passive: false });
+
+window.addEventListener("touchmove", (e) => {
+  if (!isDragging) return;
+
+  const touch = e.touches[0];
+
+  offsetX = touch.clientX - startX;
+  offsetY = touch.clientY - startY;
+
+  updateDragPosition();
+}, { passive: false });
+
+toggle.addEventListener("click", () => {
+  const isActive = toggle.classList.toggle("active");
+
+  if (isActive) {
+    enterDarkMode();
+  } else {
+    exitToLightMode();
+  }
+});
+
+function enterDarkMode() {
+  spline.style.transform = "scale(1.1)";
+  spline.style.filter = "brightness(0.6) blur(2px)";
+
+  overlay.classList.add("show");
+
+  setTimeout(() => {
+    window.location.href = "ganet star view.html";
+  }, 800);
+}
+
+function exitToLightMode() {
+  spline.style.transform = "scale(1)";
+  spline.style.filter = "none";
+
+  overlay.classList.add("show");
+
+  setTimeout(() => {
+    window.location.href = "ganet view.html";
+  }, 800);
+}
+function showInfoPanel() {
+  panel.classList.remove("hidden");
+  panelHandle.classList.add("hidden");
+}
+
+function hideInfoPanel() {
+  panel.classList.add("hidden");
+  panelHandle.classList.remove("hidden");
+}
+panelClose.addEventListener("click", () => {
+  hideInfoPanel();
+});
+function goMenu() {
+  overlay.classList.add("show");
+
+  setTimeout(() => {
+    window.location.href = "The star I am.html";
+  }, 700);
+}
+
+function goCollectStar() {
+  overlay.classList.add("show");
+
+  setTimeout(() => {
+    window.location.href = "collect-your-star.html";
+  }, 700);
+}
+panelHandle.addEventListener("click", () => {
+  showInfoPanel();
+});
+  </script>
+
+</body>
+</html>
