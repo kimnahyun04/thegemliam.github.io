@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>16:9 Fixed Layout</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&display=swap" rel="stylesheet">
+     <style>
+     * {
+       margin: 0;
+       padding: 0;
+       box-sizing: border-box;
+     }
+
+      body {
+      background: #ffdbe7;
+      overflow: hidden;
+      font-family: Arial, Helvetica, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      font-family: 'Cormorant Garamond', serif;
+    }
+
+    /* 전체 화면 중앙 정렬 */
+     .viewport {
+     width: 100vw;
+     height: 100vh;
+     display: flex;
+     justify-content: center;
+     align-items: center;
+     overflow: hidden;
+     padding: 1vw;
+     position: relative;
+     }
+
+    /* 16:9 고정 컨테이너 */
+    .game-container {
+      position: relative;
+      width: min(85vw, 85vh * 16 / 9);
+      aspect-ratio: 16 / 9;
+      background: #c6deff23;
+      border-radius: 1.2cqw;
+      overflow: visible; 
+      container-type: inline-size;
+      container-name: stage;
+      padding: 2%;
+      margin: 0 auto;
+      z-index: 1;
+      flex-shrink: 0;
+      box-shadow: 0 1.2cqw 3cqw rgba(0,0,0,0.12);
+    }
+    
+
+    .spline-embed {
+     position: absolute;
+     inset: 0;
+     width: 100%;
+     height: 100%;
+     display: block;
+     pointer-events: none;
+     }
+    
+    .bg-spline {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+}
+
+.bg-spline-inner {
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+    
+
+    
+    /* ===== 메인 타이포 ===== */
+    .big-title {
+  position: absolute;
+  top: 17%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 12cqw;
+  line-height: 0.86;
+  letter-spacing: -0.06em;
+  font-weight: 100;
+  color: rgba(255, 255, 255, 0.836);
+  z-index: 10;
+  text-align: center;
+  white-space: nowrap;
+
+  text-shadow:
+
+  0 0.3cqw 1cqw rgba(0,0,0,0.3),
+  0 0 10cqw rgba(255,255,255,0.4);
+
+  overflow: hidden;
+}
+
+    .tiny-the {
+      position: absolute;
+      top: 18.5%;
+      left: 48%;
+      font-size: 1.8cqw;
+      z-index: 4;
+    }
+
+    /* ===== 텍스트 ===== */
+    .left-top {
+      position: absolute;
+      top: 10%;
+      left: 5%;
+      font-size: 1.5cqw;
+      line-height: 1.05;
+      text-align: center;
+      z-index: 5;
+    }
+
+    .left-bottom {
+      position: absolute;
+      bottom: 20%;
+      left: 10%;
+      font-size: 1.15cqw;
+      line-height: 1.25;
+      z-index: 5;
+    }
+
+    .right-bottom {
+      position: absolute;
+      bottom: 22%;
+      right: 10%;
+      font-size: 2cqw;
+      line-height: 1.08;
+      text-align: center;
+      z-index: 5;
+    }
+    
+    .top-title {
+     position: absolute;
+     top: 4%;
+     left: 50%;
+     transform: translateX(-50%);
+
+     font-size: 2cqw;
+     letter-spacing: 0.15em; /* 🔥 가로로 길게 */
+     text-transform: uppercase;
+
+     font-weight: 500;
+
+     color: rgba(255, 255, 255, 0.7);
+
+     white-space: nowrap;
+      z-index: 10;
+     }
+
+
+    .center-copy {
+  position: absolute;
+  width: 100%;
+  bottom: 2%;
+  left: 50%;
+  transform: translate(-50%, 0); /* 🔥 핵심 */
+  font-size: 2.5cqw;
+  line-height: 1.1;
+  text-align: center;
+  z-index: 5;
+  white-space: nowrap;
+  color: #ffffff80;
+
+  animation: unlockFloat 4.8s ease-in-out infinite;
+}
+@keyframes unlockFloat {
+  0% {
+    transform: translateX(-50%) translateY(0);
+  }
+  25% {
+    transform: translateX(-50%) translateY(-0.25cqw);
+  }
+  50% {
+    transform: translateX(-50%) translateY(0.08cqw);
+  }
+  75% {
+    transform: translateX(-50%) translateY(-0.18cqw);
+  }
+  100% {
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+    /* ===== 카드 ===== */
+    .cards-wrap {
+      position: absolute;
+      width: 100%;
+      height: 100%;
+      inset: 0;
+      padding: 0;
+      pointer-events: none;
+      z-index: 2;
+    }
+    .card::before {
+     content: "";
+     position: absolute;
+     inset: 0;
+     border-radius: inherit;
+
+     background: linear-gradient(
+     120deg,
+     rgba(255,255,255,0.45) 0%,
+     rgba(255,255,255,0.08) 30%,
+     rgba(255,255,255,0.15) 60%,
+     rgba(255,255,255,0.3) 100%
+     );
+ 
+     opacity: 0.6;
+     pointer-events: none;
+     }
+    .card {
+    position: absolute;
+    width: 18%;
+    aspect-ratio: 0.7;
+    background: rgba(255, 255, 255, 0.08);
+    backdrop-filter: blur(18px) saturate(160%);
+    -webkit-backdrop-filter: blur(18px) saturate(160%);
+    border-radius: 0.6cqw;
+    border: 0.08cqw solid rgba(255,255,255,0.35);
+    box-shadow:
+    0 1cqw 2.5cqw rgba(0,0,0,0.15),
+    inset 0 0.3cqw 0.6cqw rgba(255,255,255,0.25),
+    inset 0 -0.3cqw 0.6cqw rgba(0,0,0,0.05);
+    transition:
+  transform 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+  box-shadow 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+  filter 0.55s cubic-bezier(0.22, 1, 0.36, 1);
+    cursor: pointer;
+    pointer-events: auto;
+    z-index: 3;
+    transform-origin: center center;
+     display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0.8cqw;
+    }
+
+    .card::after {
+     content: "";
+     position: absolute;
+     top: -20%;
+     left: -40%;
+     width: 180%;
+     height: 140%;
+
+     background: radial-gradient(
+     circle,
+     rgba(255,255,255,0.35),
+     rgba(255,255,255,0.05),
+     transparent
+     );
+
+     transform: rotate(25deg);
+     opacity: 0.5;
+     pointer-events: none;
+     }
+
+.card-img {
+  position: absolute; /* 🔥 카드 크기 영향 못주게 */
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 85%;
+
+  object-fit: cover;
+
+  border-radius: inherit;
+  
+}
+
+.card-text {
+  position: absolute;
+  bottom: 3%;
+  left: 5%;
+
+  font-size: 1cqw;
+  color: #fff;
+
+  z-index: 2; /* 🔥 이미지 위로 */
+}
+
+.card-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(255, 245, 250, 0.08);
+  backdrop-filter: blur(0.8cqw);
+  -webkit-backdrop-filter: blur(0.8cqw);
+  z-index: 80;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+
+.card-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.card-overlay.hidden {
+  display: none;
+}
+
+.flying-card {
+  position: fixed;
+  margin: 0;
+  z-index: 100;
+  pointer-events: auto;
+  transform-origin: center center;
+  will-change: top, left, width, height, transform;
+  box-shadow:
+    0 2cqw 4cqw rgba(0,0,0,0.18),
+    inset 0 0.3cqw 0.6cqw rgba(255,255,255,0.25),
+    inset 0 -0.3cqw 0.6cqw rgba(0,0,0,0.05);
+}
+
+.flying-card.is-animating {
+  transition:
+    top 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    left 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    width 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    height 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.8s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.8s ease;
+}
+
+.flying-card.to-center {
+  box-shadow:
+    0 3cqw 6cqw rgba(0,0,0,0.22),
+    0 0 2cqw rgba(255,255,255,0.18),
+    inset 0 0.3cqw 0.6cqw rgba(255,255,255,0.25),
+    inset 0 -0.3cqw 0.6cqw rgba(0,0,0,0.05);
+    animation: floatingCard3D 5s ease-in-out infinite;
+
+}
+
+.card.is-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+.card:hover {
+  box-shadow:
+    0 1.6cqw 3.4cqw rgba(0,0,0,0.18),
+    inset 0 0.3cqw 0.6cqw rgba(255,255,255,0.28),
+    inset 0 -0.3cqw 0.6cqw rgba(0,0,0,0.05);
+}
+     .c1 { left: -10%; top: 46%; --base-rotate: -8deg; transform: rotate(var(--base-rotate)); }
+.c2 { left: 0%; top: 26%; --base-rotate: -25deg; transform: rotate(var(--base-rotate)); }
+.c3 { left: 9%; top: 42%; --base-rotate: -10deg; transform: rotate(var(--base-rotate)); }
+.c4 { left: 18%; top: 22%; --base-rotate: 0deg; transform: rotate(var(--base-rotate)); }
+.c5 { left: 27%; top: 44%; --base-rotate: -5deg; transform: rotate(var(--base-rotate)); }
+.c6 { left: 36%; top: 33%; --base-rotate: 0deg; transform: rotate(var(--base-rotate)); }
+.c7 { left: 47%; top: 27%; --base-rotate: 0deg; transform: rotate(var(--base-rotate)); }
+.c8 { left: 56%; top: 44%; --base-rotate: 5deg; transform: rotate(var(--base-rotate)); }
+.c9 { left: 65%; top: 22%; --base-rotate: 0deg; transform: rotate(var(--base-rotate)); }
+.c10 { left: 74%; top: 42%; --base-rotate: 10deg; transform: rotate(var(--base-rotate)); }
+.c11 { left: 83%; top: 26%; --base-rotate: 25deg; transform: rotate(var(--base-rotate)); }
+.c12 { left: 92%; top: 46%; --base-rotate: 8deg; transform: rotate(var(--base-rotate)); }
+
+    .c1:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) - 5deg)); }
+.c2:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) - 5deg)); }
+.c3:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) - 5deg)); }
+.c4:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) + 5deg)); }
+.c5:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) - 5deg)); }
+.c6:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) + 5deg)); }
+.c7:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) + 5deg)); }
+.c8:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) + 5deg)); }
+.c9:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) + 5deg)); }
+.c10:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) + 5deg)); }
+.c11:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) + 5deg)); }
+.c12:hover { transform: translateY(-10%) rotate(calc(var(--base-rotate) + 5deg)); }
+
+    /* 아주 좁은 세로 화면에서도 글자가 튀지 않게 미세 보정 */
+    @media (max-aspect-ratio: 9/16) {
+      .topbar {
+        font-size: 1.25cqw;
+      }
+
+      .center-copy {
+        font-size: 2.8cqw;
+      }
+
+      .left-top,
+      .right-bottom {
+        font-size: 1.9cqw;
+      }
+    }
+     .bg-spline-wrap {
+     position: absolute;
+     top: 50%;
+     left: 50%;
+     width: 120%;
+     height: 120%;
+     transform: translate(-50%, -50%);
+     z-index: 0;
+     pointer-events: none;
+     overflow: hidden;
+    }
+
+     .bg-spline {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      pointer-events: none;
+      opacity: 1;
+      filter: blur(2px);
+    }
+    
+.star-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  overflow: hidden;
+}
+
+.sparkle {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  animation: sparkleTwinkle ease-in-out infinite,
+             floatMove linear infinite;
+}
+
+/* 더 또렷하게 */
+.sparkle.small {
+  background: rgba(255,255,255,1);
+  filter: blur(0.02cqw);
+}
+
+.sparkle.medium {
+  background: rgba(255,240,250,0.95);
+  filter: blur(0.04cqw);
+}
+
+.sparkle.glow {
+  background: rgba(255,220,240,0.6);
+  filter: blur(0.12cqw);
+}
+
+@keyframes sparkleTwinkle {
+  0%   { opacity: 0.1; transform: scale(0.8); }
+  50%  { opacity: 1; transform: scale(1.2); }
+  100% { opacity: 0.1; transform: scale(0.8); }
+}
+
+@keyframes floatMove {
+  0%   { transform: translateY(0); }
+  100% { transform: translateY(-2cqw); }
+}
+.sound-wave-btn {
+  position: absolute;
+  top: 4%;
+  right: 4%;
+  width: 5.2cqw;
+  height: 5.2cqw;
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.25s ease, opacity 0.25s ease;
+}
+
+.sound-wave-btn:hover {
+  transform: scale(1.06);
+}
+
+.sound-wave-svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  filter:
+    drop-shadow(0 0 0.5cqw rgba(255,255,255,0.28))
+    drop-shadow(0 0 1.2cqw rgba(255,120,220,0.18));
+}
+
+.wave-path {
+  fill: none;
+  stroke: url(#waveGradient);
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transform-origin: 50% 50%;
+}
+
+/* 꺼짐 */
+.sound-wave-btn.is-paused .wave-path {
+  animation: none;
+  opacity: 0.3;
+  filter: blur(0.015cqw);
+}
+
+/* 켜짐 */
+.sound-wave-btn.is-playing .wave-path {
+  filter: blur(0.01cqw);
+}
+
+.wave-1 { opacity: 1; }
+.wave-2 { opacity: 0.8; }
+.wave-3 { opacity: 0.55; }
+.wave-4 { opacity: 0.35; }
+
+.sound-wave-btn.is-playing .wave-1 {
+  animation: wave1 1.4s ease-in-out infinite,
+             waveDistort 2.6s ease-in-out infinite;
+}
+
+.sound-wave-btn.is-playing .wave-2 {
+  animation: wave2 1.9s ease-in-out infinite reverse,
+             waveDistort 3.2s ease-in-out infinite;
+}
+
+.sound-wave-btn.is-playing .wave-3 {
+  animation: wave3 2.5s ease-in-out infinite,
+             waveDistort 3.8s ease-in-out infinite;
+}
+
+.sound-wave-btn.is-playing .wave-4 {
+  animation: wave4 3.1s ease-in-out infinite reverse,
+             waveDistort 4.5s ease-in-out infinite;
+}
+
+@keyframes wave1 {
+  0%, 100% { transform: scale(0.78) rotate(0deg); stroke-width: 1.6; }
+  50% { transform: scale(0.96) rotate(8deg); stroke-width: 2.4; }
+}
+
+@keyframes wave2 {
+  0%, 100% { transform: scale(0.9) rotate(0deg); stroke-width: 1.5; }
+  50% { transform: scale(1.08) rotate(-7deg); stroke-width: 2.2; }
+}
+
+@keyframes wave3 {
+  0%, 100% { transform: scale(1.04) rotate(0deg); stroke-width: 1.4; }
+  50% { transform: scale(1.2) rotate(6deg); stroke-width: 2; }
+}
+
+@keyframes wave4 {
+  0%, 100% { transform: scale(1.2) rotate(0deg); stroke-width: 1.2; }
+  50% { transform: scale(1.34) rotate(-5deg); stroke-width: 1.8; }
+}
+@keyframes floatingCard3D {
+  0% {
+    transform: translateY(0)
+               rotateX(0deg)
+               rotateY(0deg)
+               scale(1.06);
+  }
+
+  25% {
+    transform: translateY(-0.7cqw)
+               rotateX(6deg)
+               rotateY(-4deg)
+               scale(1.065);
+  }
+
+  50% {
+    transform: translateY(0.4cqw)
+               rotateX(-5deg)
+               rotateY(3deg)
+               scale(1.055);
+  }
+
+  75% {
+    transform: translateY(-0.5cqw)
+               rotateX(4deg)
+               rotateY(2deg)
+               scale(1.06);
+  }
+
+  100% {
+    transform: translateY(0)
+               rotateX(0deg)
+               rotateY(0deg)
+               scale(1.06);
+  }
+}
+#transition {
+  position: fixed;
+  inset: 0;
+  background: black;
+  opacity: 0;
+  pointer-events: none;
+  z-index: 9999;
+  transition: opacity 0.9s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+#transition.show {
+  opacity: 1;
+}
+
+.menu-toggle {
+  position: absolute;
+  top: 4%;
+  left: 4%;
+
+  width: 3.2cqw;
+  height: 3.2cqw;
+  min-width: 34px;
+  min-height: 34px;
+
+  z-index: 30;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.38cqw;
+
+  cursor: pointer;
+
+  border-radius: 999px;
+
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+
+  border: 0.08cqw solid rgba(255,255,255,0.2);
+
+  padding: 0.7cqw;
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.25s ease;
+}
+
+.menu-toggle:hover {
+  background: rgba(255,255,255,0.12);
+  border-color: rgba(255,255,255,0.3);
+  transform: translateY(-1px);
+}
+
+.menu-toggle span {
+  display: block;
+  width: 100%;
+  height: 0.11cqw;
+  min-height: 1.5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.9);
+}
+
+.side-panel {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: min(28cqw, 25rem);
+  height: 100%;
+  z-index: 50;
+
+  padding: 2.2cqw 1.6cqw 1.6cqw;
+
+  background: linear-gradient(
+    180deg,
+    rgba(255,255,255,0.18) 0%,
+    rgba(255,255,255,0.08) 100%
+  );
+
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+
+  border: 0.08cqw solid rgba(255,255,255,0.16);
+  box-shadow: 0 1.2cqw 3cqw rgba(0,0,0,0.12);
+
+  border-radius: 1.6cqw;
+  overflow: hidden;
+
+  transform: translateX(-105%);
+  opacity: 0;
+  pointer-events: none;
+
+  transition:
+    transform 0.45s cubic-bezier(0.22,1,0.36,1),
+    opacity 0.25s ease;
+}
+
+.side-panel.show {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.side-panel-header {
+  position: relative;
+  padding-right: 2.5cqw;
+  margin-bottom: 1.4cqw;
+}
+
+.side-panel-kicker {
+  font-size: 0.72cqw;
+  letter-spacing: 0.18em;
+  color: rgba(255,255,255,0.58);
+  margin-bottom: 0.45cqw;
+}
+
+.side-panel-title {
+  font-size: 2cqw;
+  font-weight: 500;
+  line-height: 1.05;
+  color: rgba(255,255,255,0.92);
+}
+
+.side-panel-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+
+  width: 2cqw;
+  height: 2cqw;
+  min-width: 28px;
+  min-height: 28px;
+
+  border: none;
+  border-radius: 50%;
+
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.88);
+
+  font-size: 1.2cqw;
+  line-height: 1;
+  cursor: pointer;
+
+  transition: all 0.22s ease;
+}
+
+.side-panel-close:hover {
+  background: rgba(255,255,255,0.22);
+  transform: scale(1.04);
+}
+
+.hidden {
+  display: none;
+}
+
+.menu-item,
+.note-save {
+  width: 100%;
+  text-align: left;
+
+  border: none;
+  border-radius: 0.9cqw;
+
+  background: rgba(255,255,255,0.14);
+  color: rgba(255,255,255,0.88);
+
+  padding: 0.95cqw 1cqw;
+  margin-bottom: 0.7cqw;
+
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 1.02cqw;
+  cursor: pointer;
+
+  transition: all 0.22s ease;
+}
+
+.menu-item:hover,
+.note-save:hover {
+  background: rgba(255,255,255,0.22);
+  transform: translateX(2px);
+}
+
+.note-block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.72cqw;
+  margin-bottom: 1cqw;
+}
+
+.note-label {
+  font-size: 0.78cqw;
+  letter-spacing: 0.14em;
+  color: rgba(255,255,255,0.62);
+  text-transform: uppercase;
+}
+
+.note-input,
+.note-textarea {
+  width: 100%;
+  border: none;
+  outline: none;
+
+  border-radius: 0.8cqw;
+
+  background: rgba(255,255,255,0.12);
+  color: white;
+
+  padding: 1cqw;
+  font-family: inherit;
+  font-size: 0.95cqw;
+}
+
+.note-textarea {
+  min-height: 7cqw;
+  resize: none;
+}
+
+.back-link {
+  border: none;
+  background: transparent;
+  color: rgba(255,255,255,0.72);
+
+  font-family: inherit;
+  font-size: 0.95cqw;
+
+  margin-bottom: 1cqw;
+  cursor: pointer;
+}
+
+.back-link:hover {
+  color: white;
+}
+
+.saved-note {
+  margin-top: 1.2cqw;
+}
+
+.saved-note-content {
+  max-height: 14cqw;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7cqw;
+  padding-right: 0.3cqw;
+}
+
+.saved-note-item {
+  padding: 0.9cqw;
+  border-radius: 0.9cqw;
+  background: rgba(255,255,255,0.12);
+}
+
+.saved-note-delete {
+  margin-top: 0.7cqw;
+  border: none;
+  border-radius: 999px;
+
+  padding: 0.35cqw 0.75cqw;
+
+  background: rgba(255,255,255,0.18);
+  color: white;
+  cursor: pointer;
+}
+
+.saved-note-delete:hover {
+  background: rgba(255,255,255,0.28);
+}
+  </style>
+</head>
+
+<body>
+  <script type="module" src="https://unpkg.com/@splinetool/viewer@1.12.73/build/spline-viewer.js"></script>
+  <div id="transition"></div>
+  <div class="bg-spline">
+  <spline-viewer
+    class="bg-spline-inner"
+    url="https://prod.spline.design/7e97zBHZBdTZaWAi/scene.splinecode">
+  </spline-viewer>
+</div>
+<audio id="bgm" loop>
+  <source src="메인 화면 소리.mp3" type="audio/mpeg">
+</audio>
+<audio id="hover-sfx" preload="auto">
+  <source src="카드 호버.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="card-open-sfx" preload="auto">
+  <source src="카드 내밈.mp3" type="audio/mpeg">
+</audio>
+
+<audio id="card-close-sfx" preload="auto">
+  <source src="카드 취소.mp3" type="audio/mpeg">
+</audio>
+
+<button id="sound-btn" class="sound-wave-btn" aria-label="Toggle sound">
+  <svg class="sound-wave-svg" viewBox="0 0 120 120" aria-hidden="true">
+    <defs>
+      <linearGradient id="waveGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+  <stop offset="0%" stop-color="#fde68a"/>  <!-- 노랑 -->
+  <stop offset="55%" stop-color="#f472b6"/> <!-- 핑크 -->
+  <stop offset="100%" stop-color="#a78bfa"/> <!-- 보라 -->
+    </linearGradient>
+    </defs>
+
+    <path class="wave-path wave-1" d="M60,18 C74,18 84,24 91,34 C99,45 102,56 101,68 C100,82 93,94 81,101 C69,108 54,109 42,104 C30,99 21,89 18,76 C15,63 17,49 24,38 C31,27 44,19 60,18Z"/>
+    <path class="wave-path wave-2" d="M60,18 C74,18 84,24 91,34 C99,45 102,56 101,68 C100,82 93,94 81,101 C69,108 54,109 42,104 C30,99 21,89 18,76 C15,63 17,49 24,38 C31,27 44,19 60,18Z"/>
+    <path class="wave-path wave-3" d="M60,18 C74,18 84,24 91,34 C99,45 102,56 101,68 C100,82 93,94 81,101 C69,108 54,109 42,104 C30,99 21,89 18,76 C15,63 17,49 24,38 C31,27 44,19 60,18Z"/>
+    <path class="wave-path wave-4" d="M60,18 C74,18 84,24 91,34 C99,45 102,56 101,68 C100,82 93,94 81,101 C69,108 54,109 42,104 C30,99 21,89 18,76 C15,63 17,49 24,38 C31,27 44,19 60,18Z"/>
+  </svg>
+</button>
+
+
+    <div class="star-overlay"></div>
+    <!-- 중앙 흰색 박스 : 여기 -->
+     <div id="card-overlay" class="card-overlay hidden"></div>
+    <div class="game-container">
+    
+      <div class="menu-toggle" id="menuToggle" aria-label="Open menu">
+  <span></span>
+  <span></span>
+  <span></span>
+</div>
+
+<div class="side-panel" id="sidePanel">
+  <div class="side-panel-header">
+    <div class="side-panel-kicker">ARCHIVE</div>
+    <h2 class="side-panel-title">Shared Space</h2>
+    <button class="side-panel-close" id="sidePanelClose">×</button>
+  </div>
+
+  <!-- 메뉴 화면 -->
+  <div class="side-panel-screen menu-screen" id="menuScreen">
+
+    <button class="menu-item" onclick="window.location.href='ThegemIam.html'">
+      The Gem I Am
+    </button>
+
+    <button class="menu-item" onclick="window.location.href='ganet loading.html'">
+      Garnet Journey
+    </button>
+
+    <button class="menu-item" id="openNotesView">
+      Birthstone Notes
+    </button>
+
+  </div>
+
+  <!-- 노트 화면 -->
+  <div class="side-panel-screen notes-screen hidden" id="notesScreen">
+
+    <button class="back-link" id="backToMenu">← Back</button>
+
+    <div class="note-block">
+      <label class="note-label">Birthstone</label>
+      <input id="stoneName" class="note-input" type="text">
+    </div>
+
+    <div class="note-block">
+      <label class="note-label">Meaning</label>
+      <input id="stoneMeaning" class="note-input" type="text">
+    </div>
+
+    <div class="note-block">
+      <label class="note-label">Memo</label>
+      <textarea id="stoneMemo" class="note-textarea"></textarea>
+    </div>
+
+    <button class="note-save" id="noteSave">Save Note</button>
+
+    <div class="saved-note">
+      <div class="saved-note-kicker">Saved Notes</div>
+      <div class="saved-note-content" id="savedNoteContent"></div>
+    </div>
+
+  </div>
+</div>
+
+      <div class="top-title">Explore Your Birthstar</div>
+      
+
+      <div class="big-title">THE STAR I AM</div>
+
+      <div class="center-copy">Unveil your birthstone, and experience the story of your beginning.</div>
+
+      
+
+    <div class="card c1" data-link="ganet star view.html">
+  <img src="./염소자리.jpg" class="card-img" />
+  <div class="card-text">
+    Garnet<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c2">
+  <img src="./물병자리.jpg" class="card-img" />
+  <div class="card-text">
+    Garnet<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c3">
+  <img src="./물고기자리.jpg" class="card-img" />
+  <div class="card-text">
+    AQUA MARIN<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c4">
+  <img src="./양자리.jpg" class="card-img" />
+  <div class="card-text">
+    DIAMOND<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c5">
+  <img src="./황소자리.jpg" class="card-img" />
+  <div class="card-text">
+    DIAMOND<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c6">
+  <img src="./쌍둥이자리.jpg" class="card-img" />
+  <div class="card-text">
+    DIAMOND<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c7">
+  <img src="./게자리.jpg" class="card-img" />
+  <div class="card-text">
+    DIAMOND<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c8">
+  <img src="./사자자리.jpg" class="card-img" />
+  <div class="card-text">
+    DIAMOND<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c9">
+  <img src="./처녀자리.jpg" class="card-img" />
+  <div class="card-text">
+    DIAMOND<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c10">
+  <img src="./천칭자리.jpg" class="card-img" />
+  <div class="card-text">
+    DIAMOND<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c11">
+  <img src="./전갈자리.jpg" class="card-img" />
+  <div class="card-text">
+    DIAMOND<br>
+    Write something...
+  </div>
+</div>
+        <div class="card c12">
+  <img src="./사수자리.jpg" class="card-img" />
+  <div class="card-text">
+    DIAMOND<br>
+    Write something...
+  </div>
+</div>
+
+    </div>
+  </div>
+  <script>
+const bgm = document.getElementById("bgm");
+const btn = document.getElementById("sound-btn");
+const hoverSfx = document.getElementById("hover-sfx");
+const cardOpenSfx = document.getElementById("card-open-sfx");
+const overlay = document.getElementById("card-overlay");
+const cards = document.querySelectorAll(".card");
+
+let isPlaying = false;
+let activeFlyingCard = null;
+let activeTargetLink = null;
+let isCardOpen = false;
+
+function setWaveState(playing) {
+  btn.classList.toggle("is-playing", playing);
+  btn.classList.toggle("is-paused", !playing);
+}
+
+setWaveState(false);
+
+document.addEventListener("click", () => {
+  if (!isPlaying) {
+    bgm.volume = 0.15;
+    bgm.play().catch(() => {});
+    isPlaying = true;
+    setWaveState(true);
+  }
+}, { once: true });
+
+btn.addEventListener("click", (e) => {
+  e.stopPropagation();
+
+  if (bgm.paused) {
+    bgm.play().catch(() => {});
+    isPlaying = true;
+    setWaveState(true);
+  } else {
+    bgm.pause();
+    isPlaying = false;
+    setWaveState(false);
+  }
+});
+
+function playHoverSound() {
+  hoverSfx.currentTime = 0;
+  hoverSfx.volume = 0.35;
+  hoverSfx.play().catch(() => {});
+}
+
+function playCardOpenSound() {
+  cardOpenSfx.currentTime = 0;
+  cardOpenSfx.volume = 0.45;
+  cardOpenSfx.play().catch(() => {});
+}
+
+cards.forEach((card) => {
+  card.addEventListener("mouseenter", () => {
+    if (isCardOpen) return;
+    card.classList.add("card-hovered");
+    playHoverSound();
+  });
+
+  card.addEventListener("animationend", () => {
+    card.classList.remove("card-hovered");
+  });
+
+  card.addEventListener("click", (e) => {
+    e.stopPropagation();
+    if (isCardOpen) return;
+    openCard(card);
+  });
+});
+
+function openCard(card) {
+  isCardOpen = true;
+  activeTargetLink = card.dataset.link || "";
+
+  const rect = card.getBoundingClientRect();
+  const clone = card.cloneNode(true);
+
+  activeFlyingCard = clone;
+  card.classList.add("is-hidden");
+
+  clone.classList.add("flying-card");
+  clone.style.top = rect.top + "px";
+  clone.style.left = rect.left + "px";
+  clone.style.width = rect.width + "px";
+  clone.style.height = rect.height + "px";
+  clone.style.transform = window.getComputedStyle(card).transform === "none"
+    ? `rotate(${getComputedStyle(card).getPropertyValue("--base-rotate") || "0deg"})`
+    : window.getComputedStyle(card).transform;
+
+  document.body.appendChild(clone);
+
+  overlay.classList.remove("hidden");
+  requestAnimationFrame(() => {
+    overlay.classList.add("show");
+  });
+
+  playCardOpenSound();
+
+  requestAnimationFrame(() => {
+    clone.classList.add("is-animating");
+
+    const targetWidth = window.innerWidth * 0.24;
+    const targetHeight = targetWidth / 0.7;
+    const targetLeft = (window.innerWidth - targetWidth) / 2;
+    const targetTop = (window.innerHeight - targetHeight) / 2;
+
+    clone.style.top = `${targetTop}px`;
+    clone.style.left = `${targetLeft}px`;
+    clone.style.width = `${targetWidth}px`;
+    clone.style.height = `${targetHeight}px`;
+    clone.style.transform = "scale(1.06)";
+    clone.classList.add("to-center");
+  });
+
+  clone.addEventListener("click", () => {
+  if (!activeTargetLink) return;
+
+  const transition = document.getElementById("transition");
+
+  transition.classList.add("show");
+
+  setTimeout(() => {
+    window.location.href = activeTargetLink;
+  }, 850);
+});
+}
+
+function closeCard() {
+  if (!activeFlyingCard) return;
+  playCloseSound(); 
+  activeFlyingCard.remove();
+  activeFlyingCard = null;
+  activeTargetLink = null;
+  isCardOpen = false;
+
+  overlay.classList.remove("show");
+  setTimeout(() => {
+    overlay.classList.add("hidden");
+  }, 350);
+
+  document.querySelectorAll(".card.is-hidden").forEach((card) => {
+    card.classList.remove("is-hidden");
+  });
+}
+
+overlay.addEventListener("click", closeCard);
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") {
+    closeCard();
+  }
+});
+const closeSfx = document.getElementById("card-close-sfx");
+function playCloseSound() {
+  closeSfx.currentTime = 0;
+  closeSfx.volume =1;
+  closeSfx.play().catch(() => {});
+}
+const starOverlay = document.querySelector(".star-overlay");
+
+function createSparkles(count = 150) {
+  if (!starOverlay) return;
+
+  starOverlay.innerHTML = "";
+
+  for (let i = 0; i < count; i++) {
+    const s = document.createElement("span");
+
+    const rand = Math.random();
+    let type = "small";
+
+    if (rand > 0.75 && rand <= 0.92) type = "medium";
+    if (rand > 0.92) type = "glow";
+
+    s.className = `sparkle ${type}`;
+
+    // 완전 랜덤 위치 (핵심)
+    s.style.left = `${Math.random() * 100}%`;
+    s.style.top = `${Math.random() * 100}%`;
+
+    // 크기 랜덤
+    let size;
+    if (type === "small") size = Math.random() * 0.08 + 0.03;
+    else if (type === "medium") size = Math.random() * 0.15 + 0.08;
+    else size = Math.random() * 0.3 + 0.15;
+
+    s.style.width = `${size}cqw`;
+    s.style.height = `${size}cqw`;
+
+    // 애니메이션 랜덤
+    s.style.animationDuration = `${Math.random() * 4 + 3}s, ${Math.random() * 10 + 10}s`;
+    s.style.animationDelay = `${Math.random() * 5}s`;
+
+    // 투명도 랜덤
+    s.style.opacity = Math.random() * 0.7 + 0.3;
+
+    starOverlay.appendChild(s);
+  }
+}
+
+createSparkles(100);
+const bigTitle = document.querySelector(".big-title");
+
+bigTitle?.addEventListener("dblclick", () => {
+  const transition = document.getElementById("transition");
+
+  if (transition) {
+    transition.classList.add("show");
+
+    setTimeout(() => {
+      window.location.href = "ThegemIam.html";
+    }, 800);
+  } else {
+    window.location.href = "ThegemIam.html";
+  }
+});
+
+const menuToggle = document.getElementById("menuToggle");
+const sidePanel = document.getElementById("sidePanel");
+const sidePanelClose = document.getElementById("sidePanelClose");
+
+const menuScreen = document.getElementById("menuScreen");
+const notesScreen = document.getElementById("notesScreen");
+const openNotesView = document.getElementById("openNotesView");
+const backToMenu = document.getElementById("backToMenu");
+
+const stoneName = document.getElementById("stoneName");
+const stoneMeaning = document.getElementById("stoneMeaning");
+const stoneMemo = document.getElementById("stoneMemo");
+const noteSave = document.getElementById("noteSave");
+const savedNoteContent = document.getElementById("savedNoteContent");
+
+menuToggle.addEventListener("click", () => {
+  sidePanel.classList.toggle("show");
+});
+
+sidePanelClose.addEventListener("click", () => {
+  sidePanel.classList.remove("show");
+});
+
+openNotesView.addEventListener("click", () => {
+  menuScreen.classList.add("hidden");
+  notesScreen.classList.remove("hidden");
+});
+
+backToMenu.addEventListener("click", () => {
+  notesScreen.classList.add("hidden");
+  menuScreen.classList.remove("hidden");
+});
+
+const KEY = "birthstar_notes";
+
+function getNotes() {
+  return JSON.parse(localStorage.getItem(KEY) || "[]");
+}
+
+function saveNotes(arr) {
+  localStorage.setItem(KEY, JSON.stringify(arr));
+}
+
+function renderNotes() {
+  const notes = getNotes();
+
+  if (!notes.length) {
+    savedNoteContent.innerHTML = "No saved notes yet.";
+    return;
+  }
+
+  savedNoteContent.innerHTML = notes.map((n, i) => `
+    <div class="saved-note-item">
+      <strong>${n.name}</strong><br>
+      ${n.meaning}<br><br>
+      ${n.memo}
+      <br>
+      <button class="saved-note-delete" data-index="${i}">
+        Delete
+      </button>
+    </div>
+  `).join("");
+}
+
+noteSave.addEventListener("click", () => {
+  const arr = getNotes();
+
+  arr.unshift({
+    name: stoneName.value,
+    meaning: stoneMeaning.value,
+    memo: stoneMemo.value
+  });
+
+  saveNotes(arr);
+  renderNotes();
+
+  stoneName.value = "";
+  stoneMeaning.value = "";
+  stoneMemo.value = "";
+});
+
+savedNoteContent.addEventListener("click", (e) => {
+  if (!e.target.matches(".saved-note-delete")) return;
+
+  const idx = Number(e.target.dataset.index);
+  const arr = getNotes();
+  arr.splice(idx, 1);
+  saveNotes(arr);
+  renderNotes();
+});
+
+renderNotes();
+</script>
+</body>
+</html>
